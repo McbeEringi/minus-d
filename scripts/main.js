@@ -28,14 +28,15 @@ draw=async({
 	place&&(place={d:place.dimension,p:place.location}),
 	hc=map(chunk,x=>x*.5),hcl=dot(hc,hc)**.5,
 	
-	await[...Array(Math.ceil(size.y/chunk.y))].reduce(async(a,y,j,{length:l},o={})=>(
-		y=(j==l-1?size.y-(o.y=j*chunk.y):chunk.y),
+	await[...Array(Math.ceil(size.y/chunk.y))].reduce(async(a,y,j,{length:l})=>(
+		y=(j==l-1?size.y-j*chunk.y:chunk.y),
 		a=await a,
 		msg&&msg.sendMessage(j?`${id} ${j}/${l} done...`:`${id} render started...`),
 		a.concat(await[...Array(Math.ceil(size.z/chunk.z))].reduce(async(a,z,k,{length:l})=>(
-			z=(k==l-1?size.z-(o.z=k*chunk.z):chunk.z),
-			(await a).concat(await[...Array(Math.ceil(size.x/chunk.x))].reduce(async(a,s,i,{length:l})=>(
-				s={x:(i==l-1?size.x-(o.x=(i*chunk.x):chunk.x),y,z},
+			z=(k==l-1?size.z-k*chunk.z:chunk.z),
+			(await a).concat(await[...Array(Math.ceil(size.x/chunk.x))].reduce(async(a,s,i,{length:l},o)=>(
+				s={x:(i==l-1?size.x-i*chunk.x:chunk.x),y,z},
+				o={x:i*chunk.x,y:j*chunk.y,z:k*chunk.z},
 				sdf(add(o,hc))<=hcl&&(infill||-hcl<=sdf(add(o,hc)))&&(await a).push(await(async w=>(
 					await run(_=>(
 					[...Array(s.y)].reduce((a,_,y)=>(
