@@ -1,7 +1,7 @@
 {
 	"format_version":2,
 	"header":{
-		"name":"-D",
+		"name":"MINUS_D",
 		"description":"SDF Script @McbeEringi",
 		"uuid":"d32ed3d4-8bf1-48b6-8d41-6fad34cf55fc",
 		"version":[0,0,1],
