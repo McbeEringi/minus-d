@@ -10,7 +10,7 @@
 	"modules":[
 		{
 			"type":"script",
-			"entry":"scripts/index.js",
+			"entry":"scripts/main.js",
 			"uuid":"9577edc3-d015-4229-8623-26f7f70ff1c7",
 			"version":[0,0,1]
 		}
