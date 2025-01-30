@@ -3,59 +3,61 @@ import{BlockPermutation,world,system}from'@minecraft/server';
 const
 run=f=>new Promise(r=>system.run(_=>r(f()))),
 //uuidgen=()=>Array.from('00000000-0000-4000-1000-000000000000',x=>([1,1][x]?y=>(+x?(y&3|8):y).toString(16):(_=>x))(Math.random()*16|0)).join(''),
-assign=(w,f)=>w.reduce((a,x)=>(Object.entries(x).forEach(([i,x])=>i in a?(a[i]=f(a[i],x)):(a[i]=x)),a),{}),
-add=(...w)=>assign(w,(a,x)=>a+x),sub=(...w)=>assign(w,(a,x)=>a-x),
-mul=(...w)=>assign(w,(a,x)=>a*x),
-map=(w,f)=>Object.entries(w).reduce((a,[i,x])=>(a[i]=f(x),a),{}),
+a2o=([x,y,z])=>({x,y,z}),
+o2a=({x,y,z})=>[x,y,z],
 
-length=w=>(w.x*w.x+w.y*w.y+w.z*w.z)**.5,
+add=(a,b)=>a.map((x,i)=>x+b[i]),
+sub=(a,b)=>a.map((x,i)=>x-b[i]),
+length=w=>w.reduce((a,x)=>a+x*x,0)**.5,
 distance=(a,b)=>length(sub(a,b)),
-dot=(a,b)=>Object.values(mul(a,b)).reduce((a,x)=>a+x),
+dote=w=>w.reduce((a,x)=>a+x,0),
+
+
 smin=(a,b,k)=>(k/=1-.5**.5,(x=>b-k*(1<x?x:x<-1?0:1+.5*(x-(2-x*x)**.5)))((b-a)/k)),
 
 draw=async({
-	size={x:8,y:8,z:8},
+	size=[8,8,8],
 	sdf=p=>length(p)-3,
 	bf=p=>'minecraft:white_stained_glass'
 }={},{
-	chunk={x:8,y:8,z:8},
+	chunk=[8,8,8],
 	place=false,
 	msg=false,
 	infill=true,
 	id=`minus-d:${Math.floor(Math.random()*0xffffffff).toString(16).padStart(8,0)}`,
 	hc,hcl
 }={})=>(
-	place&&(place={d:place.dimension,p:place.location}),
-	hc=map(chunk,x=>x*.5),hcl=dot(hc,hc)**.5,
+	place&&(place={d:place.dimension,p:o2a(place.location)}),
+	hc=chunk.map(x=>x*.5),hcl=length(chunk)*.5,
 	
-	await[...Array(Math.ceil(size.y/chunk.y))].reduce(async(a,y,j,{length:l})=>(
-		y=(j==l-1?size.y-j*chunk.y:chunk.y),
+	await[...Array(Math.ceil(size[1]/chunk[1]))].reduce(async(a,y,j,{length:l})=>(
+		y=(j==l-1?size[1]-j*chunk[1]:chunk[1]),
 		a=await a,
 		msg&&msg.sendMessage(j?`${id} ${j}/${l} done...`:`${id} render started...`),
-		a.concat(await[...Array(Math.ceil(size.z/chunk.z))].reduce(async(a,z,k,{length:l})=>(
-			z=(k==l-1?size.z-k*chunk.z:chunk.z),
-			(await a).concat(await[...Array(Math.ceil(size.x/chunk.x))].reduce(async(a,s,i,{length:l},o)=>(
-				s={x:(i==l-1?size.x-i*chunk.x:chunk.x),y,z},
-				o={x:i*chunk.x,y:j*chunk.y,z:k*chunk.z},
+		a.concat(await[...Array(Math.ceil(size[2]/chunk[2]))].reduce(async(a,z,k,{length:l})=>(
+			z=(k==l-1?size[2]-k*chunk[2]:chunk[2]),
+			(await a).concat(await[...Array(Math.ceil(size[0]/chunk[0]))].reduce(async(a,s,i,{length:l},o)=>(
+				s=[(i==l-1?size[0]-i*chunk[0]:chunk[0]),y,z],
+				o=[i*chunk[0],j*chunk[1],k*chunk[2]],
 				sdf(add(o,hc))<=hcl&&(infill||-hcl<=sdf(add(o,hc)))&&(await a).push(await(async w=>(
 					await run(_=>(
-					[...Array(s.y)].reduce((a,_,y)=>(
-						[...Array(s.z)].reduce((a,_,z)=>(
-							[...Array(s.x)].reduce((a,p,x)=>(
-								p={x:x+o.x,y:y+o.y,z:z+o.z},
-								sdf(p)<=0&&(b=>(
-									b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
-									w.setBlockPermutation({x,y,z},b)
-								))(bf(p))
+						[...Array(s[1])].reduce((a,_,y)=>(
+							[...Array(s[2])].reduce((a,_,z)=>(
+								[...Array(s[0])].reduce((a,p,x)=>(
+									p=[x+o[0],y+o[1],z+o[2]],
+									sdf(p)<=0&&(b=>(
+										b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
+										w.setBlockPermutation({x,y,z},b)
+									))(bf(p))
+								),0)
 							),0)
 						),0)
-					),0)
 					)),
 					place?(
-						world.structureManager.place(w.id,place.d,add(place.p,o)),
+						world.structureManager.place(w.id,place.d,a2o(add(place.p,o))),
 						world.structureManager.delete(w.id)
 					):{s:w,p:o}
-				))(world.structureManager.createEmpty(`${id}_${i}-${j}-${k}`,s))),
+				))(world.structureManager.createEmpty(`${id}_${i}-${j}-${k}`,a2o(s)))),
 				a
 			),[]))
 		),[]))
@@ -74,20 +76,20 @@ world.beforeEvents.chatSend.subscribe((
 		sphere:r=>+r?run(async()=>(
 			r=+r,
 			await draw({
-				size:(x=>({x,y:x,z:x}))(Math.floor(r*2)+1),
-				sdf:p=>distance(p,(x=>({x,y:x,z:x}))(r))-r,
+				size:(x=>[x,x,x])(Math.floor(r*2)+1),
+				sdf:p=>distance(p,(x=>[x,x,x])(r))-r,
 				bf:p=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
 					'white,light_gray,gray,black,red,yellow,lime,green,cyan,light_blue,blue,purple,magenta,brown,orange,pink'.split(','),
-					Math.atan2(p.x-r+p.y-r,p.z-r+p.y-r)/Math.PI*.5+.5
+					Math.atan2(p[0]-r+p[1]-r,p[2]-r+p[2]-r)/Math.PI*.5+.5
 				)}_stained_glass`
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] sphere: Created sphere(r=${r}).`)
 		)):p.sendMessage(`[§cFAILED§r] sphere: "${r}" is NaN or falsy value.`),
 		octa:r=>+r?run(async w=>(
 			r=+r,
-			w=p=>dot(map(sub(p,(x=>({x,y:x,z:x}))(r)),x=>Math.abs(x)),{x:1,y:1,z:1})-r,
+			w=p=>dote(sub(p,(x=>[x,x,x])(r)).map(x=>Math.abs(x)))-r,
 			await draw({
-				size:(x=>({x,y:x,z:x}))(Math.floor(r*2)+1),
+				size:(x=>[x,x,x])(Math.floor(r*2)+1),
 				sdf:w,
 				bf:p=>(w(p)/r+1<.3)?'minecraft:sea_lantern':`minecraft:${Math.random()<.5?'light_blue':'cyan'}_stained_glass`
 			},{place:p,msg:p}),
@@ -95,10 +97,10 @@ world.beforeEvents.chatSend.subscribe((
 		)):p.sendMessage(`[§cFAILED§r] octa: "${r}" is NaN or falsy value.`),
 		smin:k=>run(async()=>(
 			await draw({
-				size:{x:8,y:20,z:8},
+				size:[8,20,8],
 				sdf:p=>smin(
-					distance(p,{x:4,y: 4,z:4})-4,
-					distance(p,{x:4,y:16,z:4})-4,
+					distance(p,[4, 4,4])-4,
+					distance(p,[4,16,4])-4,
 					+k
 				),
 			},{place:p,msg:p}),
