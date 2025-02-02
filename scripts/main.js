@@ -8,6 +8,7 @@ o2a=({x,y,z})=>[x,y,z],
 
 add=(a,b)=>a.map((x,i)=>x+b[i]),
 sub=(a,b)=>a.map((x,i)=>x-b[i]),
+div=(a,b)=>a.map((x,i)=>x/b[i]),
 length=w=>w.reduce((a,x)=>a+x*x,0)**.5,
 distance=(a,b)=>length(sub(a,b)),
 dote=w=>w.reduce((a,x)=>a+x,0),
@@ -24,44 +25,53 @@ draw=async({
 	place=false,
 	msg=false,
 	infill=true,
-	id=`minus-d:${Math.floor(Math.random()*0xffffffff).toString(16).padStart(8,0)}`,
-	hc,hcl
+	id=Math.floor(Math.random()*0xffffffff).toString(16).padStart(8,0),
+	hc,hcl,spc,est
 }={})=>(
 	place&&(place={d:place.dimension,p:o2a(place.location)}),
 	hc=chunk.map(x=>x*.5),hcl=length(chunk)*.5,
+	spc=div(size,chunk).map(x=>Math.ceil(x)),
 	
-	await[...Array(Math.ceil(size[1]/chunk[1]))].reduce(async(a,y,j,{length:l})=>(
-		y=(j==l-1?size[1]-j*chunk[1]:chunk[1]),
-		a=await a,
-		msg&&msg.sendMessage(j?`${id} ${j}/${l} done...`:`${id} render started...`),
-		a.concat(await[...Array(Math.ceil(size[2]/chunk[2]))].reduce(async(a,z,k,{length:l})=>(
-			z=(k==l-1?size[2]-k*chunk[2]:chunk[2]),
-			(await a).concat(await[...Array(Math.ceil(size[0]/chunk[0]))].reduce(async(a,s,i,{length:l},o)=>(
-				s=[(i==l-1?size[0]-i*chunk[0]:chunk[0]),y,z],
-				o=[i*chunk[0],j*chunk[1],k*chunk[2]],
-				sdf(add(o,hc))<=hcl&&(infill||-hcl<=sdf(add(o,hc)))&&(await a).push(await(async w=>(
-					await run(_=>(
-						[...Array(s[1])].reduce((a,_,y)=>(
-							[...Array(s[2])].reduce((a,_,z)=>(
-								[...Array(s[0])].reduce((a,p,x)=>(
-									p=[x+o[0],y+o[1],z+o[2]],
-									sdf(p)<=0&&(b=>(
-										b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
-										w.setBlockPermutation({x,y,z},b)
-									))(bf(p))
-								),0)
-							),0)
-						),0)
-					)),
-					place?(
-						world.structureManager.place(w.id,place.d,a2o(add(place.p,o))),
-						world.structureManager.delete(w.id)
-					):{s:w,p:o}
-				))(world.structureManager.createEmpty(`${id}_${i}-${j}-${k}`,a2o(s)))),
-				a
-			),[]))
-		),[]))
-	),[])
+	await[1,2,0].reduce((a,i,l)=>(
+		l=[...Array(spc[i])],
+		[].concat(...a.map(x=>l.map(({s,o}=0,j,{length:l})=>(
+			s=(s=>(s[i]=j==l-1?size[i]-chunk[i]*j:chunk[i],s))(x.s?.slice()??[]),
+			o=(o=>(o[i]=j*chunk[i],o))(x.o?.slice()??[]),
+			{s,o,d:sdf(add(o,hc))}
+		))))
+	),[0]).reduce((a,x,i)=>(
+		x.d<=hcl&&(i=-hcl<=x.d?0:1,a[i]??=[],a[i].push(x)),
+		a
+	),[]).reduce(async(a,p,t,arr)=>[...await a,(
+		t||(est=arr.flat().length),t='outline,infill'.split(',')[t],
+		await p.reduce(async(a,p,i,{length:l})=>[...await a,await(async w=>(
+			msg&&est%20||msg.sendMessage(`${id} ${est/20} sec (${t}: ${(i/l*100).toFixed(1)} %%)`),est--,
+			await run(_=>[1,2,0].reduce((a,i,l,o)=>(
+				l=[...Array(p.s[i])],o=p.o[i],
+				[].concat(...a.map(x=>l.map((_,j)=>({
+					l:(l=>(l[i]=j,l))(x.l?.slice()??[]),
+					g:(g=>(g[i]=o+j,g))(x.g?.slice()??[])
+				}))))
+			),[0]).forEach(q=>(
+				sdf(q.g)<=0&&(b=>(
+					b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
+					w.setBlockPermutation(a2o(q.l),b)
+				))(bf(q.g))
+			))),/*
+			await run(_=>[...Array(p.s[1])].forEach((_,y)=>[...Array(p.s[2])].forEach((_,z)=>[...Array(p.s[0])].forEach((q,x)=>(
+				q={l:[x,y,z],g:add(p.o,[x,y,z])},
+				sdf(q.g)<=0&&(b=>(
+					b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
+					w.setBlockPermutation(a2o(q.l),b)
+				))(bf(q.g));
+			))))),*/
+
+			place?(
+				world.structureManager.place(w.id,place.d,a2o(add(place.p,p.o))),
+				world.structureManager.delete(w.id)
+			):{w,p}
+		))(world.structureManager.createEmpty(`minus-d:${id}_${p.o.join('-')}`,a2o(p.s)))],[])
+	)],[])
 );
 
 
@@ -73,15 +83,16 @@ world.beforeEvents.chatSend.subscribe((
 		ping:x=>(
 			p.sendMessage('pong')
 		),
-		sphere:r=>+r?run(async()=>(
+		sphere:r=>+r?run(async w=>(
 			r=+r,
+			w=p=>distance(p,(x=>[x,x,x])(r))-r,
 			await draw({
 				size:(x=>[x,x,x])(Math.floor(r*2)+1),
-				sdf:p=>distance(p,(x=>[x,x,x])(r))-r,
+				sdf:w,
 				bf:p=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
 					'white,light_gray,gray,black,red,yellow,lime,green,cyan,light_blue,blue,purple,magenta,brown,orange,pink'.split(','),
-					Math.atan2(p[0]-r+p[1]-r,p[2]-r+p[2]-r)/Math.PI*.5+.5
-				)}_stained_glass`
+					Math.atan2(p[0]-r+p[1]-r,p[2]-r+p[1]-r)/Math.PI*.5+.5
+				)}_${w(p)/r+1<.7?'concrete':'stained_glass'}`
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] sphere: Created sphere(r=${r}).`)
 		)):p.sendMessage(`[§cFAILED§r] sphere: "${r}" is NaN or falsy value.`),
