@@ -40,7 +40,7 @@ draw=async({
 			{s,o,d:sdf(add(o,hc))}
 		))))
 	),[0]).reduce((a,x,i)=>(
-		x.d<=hcl&&(i=-hcl<=x.d?0:1,a[i]??=[],a[i].push(x)),
+		x.d<=hcl&&(infill||-hcl<=x.d)&&(i=-hcl<=x.d?0:1,a[i]??=[],a[i].push(x)),
 		a
 	),[]).reduce(async(a,p,t,arr)=>[...await a,(
 		t||(est=arr.flat().length),t='outline,infill'.split(',')[t],
