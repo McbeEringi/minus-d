@@ -6,15 +6,64 @@ run=f=>new Promise(r=>system.run(_=>r(f()))),
 a2o=([x,y,z])=>({x,y,z}),
 o2a=({x,y,z})=>[x,y,z],
 
+fill=w=>new Proxy({},{get:_=>w}),
+v0=fill(0),
 add=(a,b)=>a.map((x,i)=>x+b[i]),
 sub=(a,b)=>a.map((x,i)=>x-b[i]),
+mul=(a,b)=>a.map((x,i)=>x*b[i]),
 div=(a,b)=>a.map((x,i)=>x/b[i]),
+max=(a,b)=>a.map((x,i)=>Math.max(x,b[i])),
+min=(a,b)=>a.map((x,i)=>Math.min(x,b[i])),
+fclamp=(w,a,b)=>Math.min(Math.max(w,a),b),
+clamp=(w,a,b)=>w.map((x,i)=>fclamp(x,a[i],b[i])),
+fmix=(a,b,w)=>a*(1-w)+b*w,
+mix=(a,b,w)=>a.map((x,i)=>fmix(x,b[i],w[i])),
+flip=w=>a.map(x=>-x),
+abs=w=>w.map(x=>Math.abs(x)),
+floor=w=>w.map(x=>Math.floor(x)),
+fract=w=>w.map(x=>x-Math.floor(x)),
+ceil=w=>w.map(x=>Math.ceil(x)),
 length=w=>w.reduce((a,x)=>a+x*x,0)**.5,
+lenn=(w,n)=>w.reduce((a,x)=>a+x**n,0)**(1/n),
 distance=(a,b)=>length(sub(a,b)),
+dot=(a,b)=>a.reduce((a,x,i)=>a+x*b[i],0),
 dote=w=>w.reduce((a,x)=>a+x,0),
 
+sd=(w=>Object.assign(w,{
+	op:{
+		// 2d 2 3d
+		rext:({prim,o})=>p=>prim([length([p[0],p[2]])-o,p[1]]),
+		ext:({prim,h})=>p=>(q=>Math.min(Math.max(...q),0)+length(max(q,v0)))([prim([p[0],p[2]]),Math.abs(p[1])-h]),
+		// 3d 2 3d
+		elong:({prim,h})=>p=>prim(sub(p,clamp(p,flip(h),h))),
+		r:({prim,r})=>p=>prim(p)-r,
+		oni:({prim,t})=>p=>Math.abs(prim(p))-t
+	},
+	b:{// boolean
+		uni:Math.min,
+		dif:(a,...b)=>Math.max(a,...b.map(x=>-x)),
+		int:Math.max,
+		xor:(a,b)=>Math.max(Math.min(a,b),-Math.max(a,b)),
 
-smin=(a,b,k)=>(k/=1-.5**.5,(x=>b-k*(1<x?x:x<-1?0:1+.5*(x-(2-x*x)**.5)))((b-a)/k)),
+		suni:(d1,d2,k)=>(h=>fmix( d2,d1,h)-k*h*(1-h))(fclamp(.5+.5*(d2-d1)/k,0,1)),
+		sdif:(d1,d2,k)=>(h=>fmix(-d2,d1,h)-k*h*(1-h))(fclamp(.5-.5*(d2+d1)/k,0,1)),
+		sint:(d1,d2,k)=>(h=>fmix( d2,d1,h)-k*h*(1-h))(fclamp(.5-.5*(d2-d1)/k,0,1)),
+	},
+
+	// prims
+	sphere:({s})=>w.op.r({prim:length,r:s}),circle:w.sphere,
+	box:({b})=>p=>(q=>length(max(q,v0))+Math.min(Math.max(...q),0))(sub(abs(p),b)),
+	rbox:({b,r})=>w.op.r({prim:w.box({b:sub(b,fill(r))}),r}),
+	//fbox:({b,e})=>p=>0,
+	torus:({t})=>w.op.rext({prim:w.circle({s:t[1]}),o:t[0]}),
+	link:({t,h})=>w.op.elong({prim:w.torus({t}),h}),
+	cone=({c,h})=>p=>((
+		q=[h*c[0]/c[1],-h],w=[length([p[0],p[2]]),p[1]],
+		a=sub(w,mul(q,fill(fclamp(dot(w,q)/dot(q,q),0,1)))),
+		b=sub(w,mul(q,[fclamp(w[0]/q[0],0,1),1])),
+		k=Math.sign(q[1])
+	)=>(Math.min(dot(a,a),dot(b,b))**.5*Math.sign(max(k*(w[0]*q[1]-w[1]*q[0]),k*(w[1]-q[1]))))()
+}))({})
 
 draw=async({
 	size=[8,8,8],
@@ -30,7 +79,7 @@ draw=async({
 }={})=>(
 	place&&(place={d:place.dimension,p:o2a(place.location)}),
 	hc=chunk.map(x=>x*.5),hcl=length(chunk)*.5,
-	spc=div(size,chunk).map(x=>Math.ceil(x)),
+	spc=ceil(div(size,chunk)),
 	
 	await[1,2,0].reduce((a,i,l)=>(
 		l=[...Array(spc[i])],
@@ -98,7 +147,7 @@ world.beforeEvents.chatSend.subscribe((
 		)):p.sendMessage(`[§cFAILED§r] sphere: "${r}" is NaN or falsy value.`),
 		octa:r=>+r?run(async w=>(
 			r=+r,
-			w=p=>dote(sub(p,(x=>[x,x,x])(r)).map(x=>Math.abs(x)))-r,
+			w=p=>abs(dote(sub(p,(x=>[x,x,x])(r))))-r,
 			await draw({
 				size:(x=>[x,x,x])(Math.floor(r*2)+1),
 				sdf:w,
@@ -106,17 +155,17 @@ world.beforeEvents.chatSend.subscribe((
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] octa: Created octa(r=${r}).`)
 		)):p.sendMessage(`[§cFAILED§r] octa: "${r}" is NaN or falsy value.`),
-		smin:k=>run(async()=>(
-			await draw({
-				size:[8,20,8],
-				sdf:p=>smin(
-					distance(p,[4, 4,4])-4,
-					distance(p,[4,16,4])-4,
-					+k
-				),
-			},{place:p,msg:p}),
-			p.sendMessage(`[  §aOK§r  ] smin: Created smin(k=${k}).`)
-		)),
+		//smin:k=>run(async()=>(
+		//	await draw({
+		//		size:[8,20,8],
+		//		sdf:p=>smin(
+		//			distance(p,[4, 4,4])-4,
+		//			distance(p,[4,16,4])-4,
+		//			+k
+		//		),
+		//	},{place:p,msg:p}),
+		//	p.sendMessage(`[  §aOK§r  ] smin: Created smin(k=${k}).`)
+		//)),
 		info:x=>p.sendMessage(JSON.stringify(d.getBlock(p.location).permutation.getAllStates())),
 		s:x=>run({
 			l:_=>p.sendMessage(JSON.stringify(world.structureManager.getWorldStructureIds())),
