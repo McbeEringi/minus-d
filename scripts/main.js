@@ -144,7 +144,13 @@ world.beforeEvents.chatSend.subscribe((
 				size:w.size,
 				sdf:p=>sd[w.sdf.name](w.sdf.arg)(sub(p,x)),
 				bf:(p,d)=>w.block
-			},{place:{dimension:p.dimension,location:a2o(sub(o2a(p.location),x))},msg:p}),
+			},{
+				place:{
+					dimension:p.dimension,
+					location:a2o(sub(o2a(p.location),x))
+				},
+				msg:p
+			}),
 			p.sendMessage(`[  §aOK§r  ] draw: ${JSON.stringify(w)}.`)
 		))().catch(e=>p.sendMessage(`[§cFAILED§r] draw: ${e}`))),
 		//bf:(p,d)=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
