@@ -58,7 +58,7 @@ sd=(w=>Object.assign(w,{
 	torus:({t})=>w.op.rext({prim:w.circle({s:t[1]}),o:t[0]}),
 	ctorus:({t,a})=>(a=[Math.sin(a),Math.cos(a)],p=>(
 		p=[Math.abs(p[0]),p[1],p[2]],
-		(dot(p,p)+t[0]*t[0]-2*t[0]*((a[1]*p[0]>a[0]*p[1])?dot([p[0],p[1]],a):length([p[0],p[1]])))**.5-t[1];
+		(dot(p,p)+t[0]*t[0]-2*t[0]*((a[1]*p[0]>a[0]*p[1])?dot([p[0],p[1]],a):length([p[0],p[1]])))**.5-t[1]
 	)),
 	link:({t,h})=>w.op.elong({prim:w.torus({t}),h}),
 	cone:({c,h})=>p=>((
@@ -68,7 +68,7 @@ sd=(w=>Object.assign(w,{
 		k=Math.sign(q[1])
 	)=>(Math.min(dot(a,a),dot(b,b))**.5*Math.sign(max(k*(w[0]*q[1]-w[1]*q[0]),k*(w[1]-q[1])))))(),
 	line:({a,b,r})=>p=>((pa=sub(p,a),ba=sub(b,a))=>
-		length(sub(pa,mul(ba,fill(fclamp(dot(pa,ba)/dot(ba,ba),0,1)))))-r;
+		length(sub(pa,mul(ba,fill(fclamp(dot(pa,ba)/dot(ba,ba),0,1)))))-r
 	)(),
 	cylinder:({h,r})=>w.op.ext({prim:w.circle({s:r}),h}),
 	//octa:
@@ -164,17 +164,14 @@ world.beforeEvents.chatSend.subscribe((
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] octa: Created octa(r=${r}).`)
 		)):p.sendMessage(`[§cFAILED§r] octa: "${r}" is NaN or falsy value.`),
-		//smin:k=>run(async()=>(
-		//	await draw({
-		//		size:[8,20,8],
-		//		sdf:p=>smin(
-		//			distance(p,[4, 4,4])-4,
-		//			distance(p,[4,16,4])-4,
-		//			+k
-		//		),
-		//	},{place:p,msg:p}),
-		//	p.sendMessage(`[  §aOK§r  ] smin: Created smin(k=${k}).`)
-		//)),
+		test:t=>run(async()=>(
+			t=t.split(/\s+/),
+			await draw({
+				size:add(mul([t[0]+t[1],t[1],t[0]+t[1]],fill(2)),fill(1)),
+				sdf:p=>sd.link({t:t.slice(0,2),h:t.slice(2,5)})(sub(p,[t[0]+t[1],t[1],t[0]+t[1]])),
+			},{place:p,msg:p}),
+			p.sendMessage(`[  §aOK§r  ] test: ${t}`)
+		)),
 		info:x=>p.sendMessage(JSON.stringify(d.getBlock(p.location).permutation.getAllStates())),
 		s:x=>run({
 			l:_=>p.sendMessage(JSON.stringify(world.structureManager.getWorldStructureIds())),
