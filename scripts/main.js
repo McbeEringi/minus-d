@@ -135,8 +135,9 @@ world.beforeEvents.chatSend.subscribe((
 			w=JSON.parse(w),
 			w={
 				size:[8,8,8],
-				sdf:{name:'sphere',arg:{s:3}},
-				block:'white_stained_glass'
+				block:'white_stained_glass',
+				...w,
+				sdf:{name:'sphere',arg:{s:3},...(w.sdf||{})}
 			},
 			x=div(w.size,fill(2)),
 			await draw({
