@@ -29,7 +29,7 @@ distance=(a,b)=>length(sub(a,b)),
 dot=(a,b)=>a.reduce((a,x,i)=>a+x*b[i],0),
 dote=w=>w.reduce((a,x)=>a+x,0),
 
-sd=(w=>Object.assign(w,{
+sd=(w=>Object.assign(w,{// https://iquilezles.org/articles/distfunctions/
 	op:{
 		// 2d 2 3d
 		rext:({prim,o})=>p=>prim([length([p[0],p[2]])-o,p[1]]),
