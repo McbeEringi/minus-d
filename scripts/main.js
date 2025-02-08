@@ -56,14 +56,23 @@ sd=(w=>Object.assign(w,{
 	rbox:({b,r})=>w.op.r({prim:w.box({b:sub(b,fill(r))}),r}),
 	//fbox:({b,e})=>p=>0,
 	torus:({t})=>w.op.rext({prim:w.circle({s:t[1]}),o:t[0]}),
+	ctorus:({t,a})=>(a=[Math.sin(a),Math.cos(a)],p=>(
+		p=[Math.abs(p[0]),p[1],p[2]],
+		(dot(p,p)+t[0]*t[0]-2*t[0]*((a[1]*p[0]>a[0]*p[1])?dot([p[0],p[1]],a):length([p[0],p[1]])))**.5-t[1];
+	)),
 	link:({t,h})=>w.op.elong({prim:w.torus({t}),h}),
-	cone=({c,h})=>p=>((
+	cone:({c,h})=>p=>((
 		q=[h*c[0]/c[1],-h],w=[length([p[0],p[2]]),p[1]],
 		a=sub(w,mul(q,fill(fclamp(dot(w,q)/dot(q,q),0,1)))),
 		b=sub(w,mul(q,[fclamp(w[0]/q[0],0,1),1])),
 		k=Math.sign(q[1])
-	)=>(Math.min(dot(a,a),dot(b,b))**.5*Math.sign(max(k*(w[0]*q[1]-w[1]*q[0]),k*(w[1]-q[1]))))()
-}))({})
+	)=>(Math.min(dot(a,a),dot(b,b))**.5*Math.sign(max(k*(w[0]*q[1]-w[1]*q[0]),k*(w[1]-q[1])))))(),
+	line:({a,b,r})=>p=>((pa=sub(p,a),ba=sub(b,a))=>
+		length(sub(pa,mul(ba,fill(fclamp(dot(pa,ba)/dot(ba,ba),0,1)))))-r;
+	)(),
+	cylinder:({h,r})=>w.op.ext({prim:w.circle({s:r}),h}),
+	//octa:
+}))({}),
 
 draw=async({
 	size=[8,8,8],
