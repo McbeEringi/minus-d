@@ -71,7 +71,7 @@ sd=(w=>Object.assign(w,{// https://iquilezles.org/articles/distfunctions/
 		length(sub(pa,mul(ba,fill(fclamp(dot(pa,ba)/dot(ba,ba),0,1)))))-r
 	)(),
 	cylinder:({h,r})=>w.op.ext({prim:w.circle({s:r}),h}),
-	//octa:
+	octa:({s})=>p=>abs(dote(sub(p,[s,s,s])))-s// TODO
 }))({}),
 
 draw=async({
@@ -130,41 +130,26 @@ world.beforeEvents.chatSend.subscribe((
 	e,p=e.sender,d=p.dimension,
 	msg=e.message.match(/^\.(?<cmd>\S*)\s*(?<arg>.*)$/)?.groups,
 	cmd={
-		ping:x=>(
-			p.sendMessage('pong')
-		),
-		sphere:r=>+r?run(async w=>(
-			r=+r,
-			w=p=>distance(p,(x=>[x,x,x])(r))-r,
+		ping:x=>p.sendMessage('pong'),
+		draw:w=>run(_=>(async x=>(
+			w=JSON.parse(w),
+			w={
+				size:[8,8,8],
+				sdf:{name:'sphere',arg:{s:3}},
+				block:'white_stained_glass'
+			},
+			x=div(w.size,fill(2)),
 			await draw({
-				size:(x=>[x,x,x])(Math.floor(r*2)+1),
-				sdf:w,
-				bf:(p,d)=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
-					'white,light_gray,gray,black,red,yellow,lime,green,cyan,light_blue,blue,purple,magenta,brown,orange,pink'.split(','),
-					Math.atan2(p[0]-r+p[1]-r,p[2]-r+p[1]-r)/Math.PI*.5+.5
-				)}_${d/r+1<.7?'concrete':'stained_glass'}`
-			},{place:p,msg:p}),
-			p.sendMessage(`[  §aOK§r  ] sphere: Created sphere(r=${r}).`)
-		)):p.sendMessage(`[§cFAILED§r] sphere: "${r}" is NaN or falsy value.`),
-		octa:r=>+r?run(async w=>(
-			r=+r,
-			w=p=>abs(dote(sub(p,(x=>[x,x,x])(r))))-r,
-			await draw({
-				size:(x=>[x,x,x])(Math.floor(r*2)+1),
-				sdf:w,
-				bf:(p,d)=>(d/r+1<.3)?'minecraft:sea_lantern':`minecraft:${Math.random()<.5?'light_blue':'cyan'}_stained_glass`
-			},{place:p,msg:p}),
-			p.sendMessage(`[  §aOK§r  ] octa: Created octa(r=${r}).`)
-		)):p.sendMessage(`[§cFAILED§r] octa: "${r}" is NaN or falsy value.`),
-		test:t=>run(async()=>(
-			t=t.split(/\s+/).map(x=>+x),
-			t=[...Array(5)].map((_,i)=>t[i]||0),
-			await draw({
-				size:add(mul([t[0]+t[1]+t[2],t[1]+t[4],t[0]+t[1]+t[3]],fill(2)),fill(1)),
-				sdf:p=>sd.link({t:t.slice(0,2),h:t.slice(2,5)})(sub(p,[t[0]+t[1]+t[2],t[1]+t[4],t[0]+t[1]+t[3]])),
-			},{place:p,msg:p}),
-			p.sendMessage(`[  §aOK§r  ] test: ${t}`)
-		)),
+				size:w.size,
+				sdf:p=>sd[w.sdf.name](w.sdf.arg)(sub(p,x)),
+				bf:(p,d)=>w.block
+			},{place:{...p,location:a2o(sub(o2a(p.location),x))},msg:p}),
+			p.sendMessage(`[  §aOK§r  ] draw: ${JSON.stringify(w)}.`)
+		))().catch(e=>p.sendMessage(`[§cFAILED§r] draw: ${e}`))),
+		//bf:(p,d)=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
+		//	'white,light_gray,gray,black,red,yellow,lime,green,cyan,light_blue,blue,purple,magenta,brown,orange,pink'.split(','),
+		//	Math.atan2(p[0]-r+p[1]-r,p[2]-r+p[1]-r)/Math.PI*.5+.5
+		//)}_${d/r+1<.7?'concrete':'stained_glass'}`
 		info:x=>p.sendMessage(JSON.stringify(d.getBlock(p.location).permutation.getAllStates())),
 		s:x=>run({
 			l:_=>p.sendMessage(JSON.stringify(world.structureManager.getWorldStructureIds())),
