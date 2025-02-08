@@ -18,7 +18,7 @@ fclamp=(w,a,b)=>Math.min(Math.max(w,a),b),
 clamp=(w,a,b)=>w.map((x,i)=>fclamp(x,a[i],b[i])),
 fmix=(a,b,w)=>a*(1-w)+b*w,
 mix=(a,b,w)=>a.map((x,i)=>fmix(x,b[i],w[i])),
-flip=w=>a.map(x=>-x),
+flip=w=>w.map(x=>-x),
 abs=w=>w.map(x=>Math.abs(x)),
 floor=w=>w.map(x=>Math.floor(x)),
 fract=w=>w.map(x=>x-Math.floor(x)),
@@ -51,7 +51,7 @@ sd=(w=>Object.assign(w,{
 	},
 
 	// prims
-	sphere:({s})=>w.op.r({prim:length,r:s}),circle:w.sphere,
+	sphere:({s})=>w.op.r({prim:length,r:s}),circle:(...x)=>w.sphere(...x),
 	box:({b})=>p=>(q=>length(max(q,v0))+Math.min(Math.max(...q),0))(sub(abs(p),b)),
 	rbox:({b,r})=>w.op.r({prim:w.box({b:sub(b,fill(r))}),r}),
 	//fbox:({b,e})=>p=>0,
@@ -110,20 +110,12 @@ draw=async({
 					l:(l=>(l[i]=j,l))(x.l?.slice()??[]),
 					g:(g=>(g[i]=o+j,g))(x.g?.slice()??[])
 				}))))
-			),[0]).forEach(q=>(
-				sdf(q.g)<=0&&(b=>(
+			),[0]).forEach((q,d)=>(
+				(d=sdf(q.g))<=0&&(b=>(
 					b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
 					w.setBlockPermutation(a2o(q.l),b)
-				))(bf(q.g))
-			))),/*
-			await run(_=>[...Array(p.s[1])].forEach((_,y)=>[...Array(p.s[2])].forEach((_,z)=>[...Array(p.s[0])].forEach((q,x)=>(
-				q={l:[x,y,z],g:add(p.o,[x,y,z])},
-				sdf(q.g)<=0&&(b=>(
-					b=b?BlockPermutation.resolve(...(Array.isArray(b)?b:[b])):null,
-					w.setBlockPermutation(a2o(q.l),b)
-				))(bf(q.g));
-			))))),*/
-
+				))(bf(q.g,d,sdf))
+			))),
 			place?(
 				world.structureManager.place(w.id,place.d,a2o(add(place.p,p.o))),
 				world.structureManager.delete(w.id)
@@ -147,10 +139,10 @@ world.beforeEvents.chatSend.subscribe((
 			await draw({
 				size:(x=>[x,x,x])(Math.floor(r*2)+1),
 				sdf:w,
-				bf:p=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
+				bf:(p,d)=>`minecraft:${((a,x)=>(x*=a.length,Math.random()<x%1?a[x+1&15]:a[x&15]))(
 					'white,light_gray,gray,black,red,yellow,lime,green,cyan,light_blue,blue,purple,magenta,brown,orange,pink'.split(','),
 					Math.atan2(p[0]-r+p[1]-r,p[2]-r+p[1]-r)/Math.PI*.5+.5
-				)}_${w(p)/r+1<.7?'concrete':'stained_glass'}`
+				)}_${d/r+1<.7?'concrete':'stained_glass'}`
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] sphere: Created sphere(r=${r}).`)
 		)):p.sendMessage(`[§cFAILED§r] sphere: "${r}" is NaN or falsy value.`),
@@ -160,15 +152,16 @@ world.beforeEvents.chatSend.subscribe((
 			await draw({
 				size:(x=>[x,x,x])(Math.floor(r*2)+1),
 				sdf:w,
-				bf:p=>(w(p)/r+1<.3)?'minecraft:sea_lantern':`minecraft:${Math.random()<.5?'light_blue':'cyan'}_stained_glass`
+				bf:(p,d)=>(d/r+1<.3)?'minecraft:sea_lantern':`minecraft:${Math.random()<.5?'light_blue':'cyan'}_stained_glass`
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] octa: Created octa(r=${r}).`)
 		)):p.sendMessage(`[§cFAILED§r] octa: "${r}" is NaN or falsy value.`),
 		test:t=>run(async()=>(
-			t=t.split(/\s+/),
+			t=t.split(/\s+/).map(x=>+x),
+			t=[...Array(5)].map((_,i)=>t[i]||0),
 			await draw({
-				size:add(mul([t[0]+t[1],t[1],t[0]+t[1]],fill(2)),fill(1)),
-				sdf:p=>sd.link({t:t.slice(0,2),h:t.slice(2,5)})(sub(p,[t[0]+t[1],t[1],t[0]+t[1]])),
+				size:add(mul([t[0]+t[1]+t[2],t[1]+t[4],t[0]+t[1]+t[3]],fill(2)),fill(1)),
+				sdf:p=>sd.link({t:t.slice(0,2),h:t.slice(2,5)})(sub(p,[t[0]+t[1]+t[2],t[1]+t[4],t[0]+t[1]+t[3]])),
 			},{place:p,msg:p}),
 			p.sendMessage(`[  §aOK§r  ] test: ${t}`)
 		)),
