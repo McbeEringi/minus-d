@@ -50,8 +50,7 @@ then you will get r=3 sphere.
     - `t` *Array[2]*: same as `torus`.
     - `h` *Array[3]*: elongate length for each axes.
 - `cone`: cone
-    - `c` *Array[2]*: cone angle for x,y axes in radians.
-    - `h` *Number*: height of cone.
+    - `q` *Array[2]*: radius of base & height.
 - `line`: capped cylinder
     - `a` *Array[3]*: line start position.
     - `b` *Array[3]*: line end position.

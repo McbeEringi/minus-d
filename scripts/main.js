@@ -61,12 +61,12 @@ sd=(w=>Object.assign(w,{// https://iquilezles.org/articles/distfunctions/
 		(dot(p,p)+t[0]*t[0]-2*t[0]*((a[1]*p[0]>a[0]*p[1])?dot([p[0],p[1]],a):length([p[0],p[1]])))**.5-t[1]
 	)),
 	link:({t,h})=>w.op.elong({prim:w.torus({t}),h}),
-	cone:({c,h})=>p=>((
-		q=[h*c[0]/c[1],-h],w=[length([p[0],p[2]]),p[1]],
+	cone:({q})=>p=>((
+		w=[length([p[0],p[2]]),p[1]],
 		a=sub(w,mul(q,fill(fclamp(dot(w,q)/dot(q,q),0,1)))),
 		b=sub(w,mul(q,[fclamp(w[0]/q[0],0,1),1])),
 		k=Math.sign(q[1])
-	)=>(Math.min(dot(a,a),dot(b,b))**.5*Math.sign(max(k*(w[0]*q[1]-w[1]*q[0]),k*(w[1]-q[1])))))(),
+	)=>(Math.min(dot(a,a),dot(b,b))**.5*Math.sign(Math.max(k*(w[0]*q[1]-w[1]*q[0]),k*(w[1]-q[1])))))(),
 	line:({a,b,r})=>p=>((pa=sub(p,a),ba=sub(b,a))=>
 		length(sub(pa,mul(ba,fill(fclamp(dot(pa,ba)/dot(ba,ba),0,1)))))-r
 	)(),
