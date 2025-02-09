@@ -56,7 +56,7 @@ then you will get r=3 sphere.
     - `b` *Array[3]*: line end position.
     - `r` *Number*: radius(thickness) of line.
 - `cylinder`: cylinder
-    - `h` *Number*: height of cylinder.
+    - `h` *Number*: half height of cylinder.
     - `r` *Number*: rasius of cylinder.
 - `octa`: octahedron
     - `s` *Number*: radius of octahedron.

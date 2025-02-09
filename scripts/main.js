@@ -71,7 +71,7 @@ sd=(w=>Object.assign(w,{// https://iquilezles.org/articles/distfunctions/
 		length(sub(pa,mul(ba,fill(fclamp(dot(pa,ba)/dot(ba,ba),0,1)))))-r
 	)(),
 	cylinder:({h,r})=>w.op.ext({prim:w.circle({s:r}),h}),
-	octa:({s})=>p=>abs(dote(sub(p,[s,s,s])))-s// TODO
+	octa:({s})=>p=>Math.abs(dote(sub(p,[s,s,s])))-s// TODO
 }))({}),
 
 draw=async({
