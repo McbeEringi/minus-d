@@ -18,7 +18,7 @@
 	"dependencies":[
 		{
 			"module_name":"@minecraft/server",
-			"version":"3.0.0-alpha"
+			"version":"2.1.0-beta"
 		}
 	]
 }
