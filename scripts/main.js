@@ -6,7 +6,7 @@ cmd=(n,w,f)=>[
 	(o,...x)=>f(Object.assign(o,{arg:x.reduce((a,x,i)=>(a[w[i].name]=x,a),{})}))
 ];
 
-system.beforeEvents.startup.subsctibe(e=>[
+system.beforeEvents.startup.subscribe(e=>[
 	cmd('6ca:sphere',[
 		{name:'center',type:'Location'},
 		{name:'radius',type:'Float'},
